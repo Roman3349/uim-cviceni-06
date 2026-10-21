@@ -21,6 +21,7 @@ poli.
 
 from __future__ import annotations
 
+import os.path
 from typing import TYPE_CHECKING
 
 import numpy as np
@@ -112,10 +113,31 @@ class KNNClassifier:
         """
         # assert  Ověřte, že model je nafitovan (self.x_train_ není None)
         # assert  Ověřte, že x.shape[1] == self.x_train_.shape[1]
-        raise NotImplementedError(
-            "Úkol: pro kazdy radek x spoctete vzdalenost ke vsem trenovacim bodum "
-            "pres self.distance.calculate, vezmete k nejblizsich a vratte vetsinovy hlas."
-        )
+        assert self.x_train_ is not None, "Model není natrénovaný. Nejdříve zavolejte fit()."
+        assert self.y_train_ is not None
+        assert x.shape[1] == self.x_train_.shape[1], "Nesouhlasí počet příznaků."
+        assert 1 <= self.k <= len(self.x_train_), "k musí být v rozsahu 1 až počet trénovacích vzorků."
+
+        x = np.asarray(x, dtype=np.float64)
+        predictions = []
+
+        for query in x:
+            distances = np.array([
+                self.distance.calculate(query, train_sample)
+                for train_sample in self.x_train_
+            ])
+
+            # Stabilní řazení: při shodné vzdálenosti rozhoduje nižší index.
+            nearest_indices = np.argsort(distances, kind="stable")[:self.k]
+            neighbor_labels = self.y_train_[nearest_indices]
+
+            # Vítězí nejčastější třída; při shodě nejnižší číselný popisek.
+            labels, counts = np.unique(neighbor_labels, return_counts=True)
+            prediction = labels[np.argmax(counts)]
+
+            predictions.append(prediction)
+
+        return np.asarray(predictions, dtype=int)
 
     def save(self, path: str) -> None:
         """Ulozi nauceny model do souboru ``.npz`` (format NumPy).
@@ -143,9 +165,14 @@ class KNNClassifier:
         #   x_train = self.x_train_
         #   y_train = self.y_train_
         #   k       = np.asarray(self.k)
-        raise NotImplementedError(
-            "Úkol: ulozte self.x_train_, self.y_train_ a self.k do .npz souboru "
-            "pres np.savez(path, x_train=..., y_train=..., k=...)."
+        assert self.x_train_ is not None, "Model není natrénovaný. Nejdříve zavolejte fit()."
+        assert self.y_train_ is not None
+
+        np.savez(
+            path,
+            x_train=self.x_train_,
+            y_train=self.y_train_,
+            k=np.asarray(self.k),
         )
 
     # Zamerne NENI @classmethod (na rozdil od PCA.load v cviceni 05): kNN
@@ -173,7 +200,19 @@ class KNNClassifier:
             ``.load(...).predict(...)``.
         """
         # assert  Ověřte, že soubor existuje a je validní .npz soubor
-        raise NotImplementedError(
-            "Úkol: nactete x_train, y_train a k z .npz souboru pres np.load(path) "
-            "a ulozte je do self.x_train_, self.y_train_ a self.k."
-        )
+        assert os.path.exists(path), f"Soubor {path} neexistuje"
+        with np.load(path, allow_pickle=False) as data:
+            x_train = data["x_train"]
+            y_train = data["y_train"]
+            k = int(data["k"])
+
+        assert x_train.ndim == 2, "Neplatný tvar trénovacích dat."
+        assert y_train.ndim == 1, "Neplatný tvar popisků."
+        assert len(x_train) == len(y_train), "Počet vzorků a popisků nesouhlasí."
+        assert 1 <= k <= len(x_train), "Neplatná hodnota k."
+
+        self.x_train_ = np.asarray(x_train, dtype=np.float64)
+        self.y_train_ = np.asarray(y_train, dtype=int)
+        self.k = k
+
+        return self

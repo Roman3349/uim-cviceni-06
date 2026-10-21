@@ -229,10 +229,27 @@ class KFold(Validator):
         """
         # assert  Ověřte, že self.n_folds je alespon 2
         # assert  Ověřte, že self.n_folds neni vetsi nez pocet vzorku x.shape[0]
-        raise NotImplementedError(
-            "Úkol: rozdelte indexy do n_folds foldu; kazdy fold jednou jako test, "
-            "zbytek train; kazdy vzorek testovan prave jednou. Viz docstring."
-        )
+        assert self.n_folds >= 2, "n_folds musí být alespoň 2"
+        n_samples = x.shape[0]
+        assert self.n_folds <= n_samples, "n_folds nesmí být větší než počet vzorků"
+
+        indices = np.arange(n_samples)
+
+        if self.shuffle:
+            rng = np.random.default_rng(self.random_state)
+            rng.shuffle(indices)
+
+        folds = np.array_split(indices, self.n_folds)
+
+        for i in range(self.n_folds):
+            test_idx = np.sort(folds[i])
+            train_idx = np.sort(
+                np.concatenate(
+                    [folds[j] for j in range(self.n_folds) if j != i]
+                )
+            )
+
+            yield train_idx, test_idx
 
 
 class Bootstrap(Validator):
@@ -309,10 +326,27 @@ class Bootstrap(Validator):
         """
         # assert  Ověřte, že self.n_bootstrap je alespon 1
         # assert  Ověřte, že X.shape[0] > 0
-        raise NotImplementedError(
-            "Úkol: n_bootstrap-krat vyberte n train indexu s opakovanim; "
-            "out-of-bag (nevybrane) indexy jsou test. Viz docstring."
-        )
+        assert self.n_bootstrap >= 1, "n_bootstrap musí být alespoň 1"
+        n_samples = x.shape[0]
+        assert n_samples > 0, "Dataset musí obsahovat alespoň jeden vzorek"
+
+        rng = np.random.default_rng(self.random_state)
+        all_indices = np.arange(n_samples)
+
+        for _ in range(self.n_bootstrap):
+            # Losování s opakováním: některé indexy se mohou opakovat.
+            train_idx = rng.integers(0, n_samples, size=n_samples)
+
+            # Testovací množinu tvoří vzorky, které nebyly vylosovány.
+            selected = np.zeros(n_samples, dtype=bool)
+            selected[train_idx] = True
+            test_idx = all_indices[~selected]
+
+            # Iterace bez OOB vzorků neposkytuje testovací množinu.
+            if test_idx.size == 0:
+                continue
+
+            yield train_idx, test_idx
 
 
 def cross_validate(

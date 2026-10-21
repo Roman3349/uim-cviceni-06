@@ -99,10 +99,7 @@ class EuclideanDistance(Distance):
     @property
     def is_metric(self) -> bool:
         """Eukleidovská vzdálenost je pravá metrika."""
-        raise NotImplementedError(
-            "Úkol: Implementujte EuclideanDistance.is_metric()"
-            "Vrátí True, pokud vzdálenost splňuje axiomy metriky."
-        )
+        return True
 
     def calculate(self, x: np.ndarray, y: np.ndarray) -> float:
         """
@@ -123,9 +120,13 @@ class EuclideanDistance(Distance):
         """
         # assert  Ověřte, že x i y jsou typu np.ndarray
         # assert  Ověřte, že x a y mají stejný tvar (stejný počet příznaků)
-        raise NotImplementedError(
-            "Úkol: Implementujte výpočet eukleidovskou vzdálenost mezi dvěma vektory x a y."
-            )
+        assert isinstance(x, np.ndarray), "x musí být np.ndarray"
+        assert isinstance(y, np.ndarray), "y musí být np.ndarray"
+        assert x.ndim == 1, "x musí být 1D vektor"
+        assert y.ndim == 1, "y musí být 1D vektor"
+        assert x.shape == y.shape, "x a y musí mít stejný tvar"
+
+        return float(np.sqrt(np.sum((x - y) ** 2)))
 
 
 class ManhattanDistance(Distance):
@@ -134,10 +135,7 @@ class ManhattanDistance(Distance):
     @property
     def is_metric(self) -> bool:
         """Manhattanská vzdálenost je pravá metrika."""
-        raise NotImplementedError(
-            "Úkol: Implementujte ManhattanDistance.is_metric()"
-            "Vrátí True, pokud vzdálenost splňuje axiomy metriky."
-        )
+        return True
 
     def calculate(self, x: np.ndarray, y: np.ndarray) -> float:
         """
@@ -158,9 +156,13 @@ class ManhattanDistance(Distance):
         """
         # assert  Ověřte, že x i y jsou typu np.ndarray
         # assert  Ověřte, že x a y mají stejný tvar (stejný počet příznaků)
-        raise NotImplementedError(
-            "Úkol: Implementujte výpočet manhattanskou vzdálenost mezi dvěma vektory x a y."
-            )
+        assert isinstance(x, np.ndarray), "x musí být np.ndarray"
+        assert isinstance(y, np.ndarray), "y musí být np.ndarray"
+        assert x.ndim == 1, "x musí být 1D vektor"
+        assert y.ndim == 1, "y musí být 1D vektor"
+        assert x.shape == y.shape, "x a y musí mít stejný tvar"
+
+        return float(np.sum(np.abs(x - y)))
 
 
 class CosineCoeficient(Distance):
@@ -171,10 +173,7 @@ class CosineCoeficient(Distance):
     @property
     def is_metric(self) -> bool:
         """Kosinová vzdálenost není pravá metrika (porušuje trojúhelníkovou nerovnost)."""
-        raise NotImplementedError(
-            "Úkol: Implementujte CosineCoeficient.is_metric()"
-            "Vrátí True, pokud vzdálenost splňuje axiomy metriky."
-        )
+        return False
 
     def calculate(self, x: np.ndarray, y: np.ndarray) -> float:
         """
@@ -196,6 +195,18 @@ class CosineCoeficient(Distance):
         # assert  Ověřte, že x i y jsou typu np.ndarray
         # assert  Ověřte, že x a y mají stejný tvar (stejný počet příznaků)
         # assert  Ověřte, že x ani y nejsou nulové vektory (dělení nulou při normalizaci)
-        raise NotImplementedError(
-            "Úkol: Implementujte výpočet kosinovou vzdálenost/koeficient mezi dvěma vektory x a y."
-        )
+        assert isinstance(x, np.ndarray), "x musí být np.ndarray"
+        assert isinstance(y, np.ndarray), "y musí být np.ndarray"
+        assert x.ndim == 1, "x musí být 1D vektor"
+        assert y.ndim == 1, "y musí být 1D vektor"
+        assert x.shape == y.shape, "x a y musí mít stejný tvar"
+
+        x_norm = np.linalg.norm(x)
+        y_norm = np.linalg.norm(y)
+
+        assert x_norm != 0, "x nesmí být nulový vektor"
+        assert y_norm != 0, "y nesmí být nulový vektor"
+
+        cosine_similarity = np.dot(x, y) / (x_norm * y_norm)
+
+        return float(1.0 - cosine_similarity)
